@@ -106,6 +106,9 @@ window.addEventListener("load", function(event) {
   
   window.addEventListener("keydown", keyListener);
   window.addEventListener("keyup", keyListener);
+  window.addEventListener("touchstart", touchListener);
+  window.addEventListener("touchend", touchListener);
+  window.addEventListener("touchmove", touchListener);
 });
 
 function drawAsteroid(p,dx,dy) {
@@ -150,4 +153,33 @@ function keyListener(event) {
 
   // Cancel the default action to avoid it being handled twice
   event.preventDefault();
+}
+
+var oldBtn = 0;
+function touchListener(e) { 
+  e.preventDefault();
+  var touches = e.changedTouches;
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  var btn = 0;
+  for (var i = 0; i < touches.length; i++) {
+    var t = touches[i];
+    if (t.pageY > h*3/4) {
+      if (t.pageX < w/3) btn|=8;
+      else if (t.pageX < w*2/3) btn|=16;
+      else btn |= 32;
+    } else if (t.pageY > h*2/4) {
+      if (t.pageX < w/3) btn|=1;
+      else if (t.pageX < w*2/3) btn|=2;
+      else btn |= 4;
+    }
+  }
+  if (btn!=oldBtn) {
+    player.up = !!(btn&2);
+    player.left = !!(btn&8);
+    player.right = !!(btn&32);
+    player.shoot = !!(btn&16);
+    sendPlayerUpdate();
+  }
+  oldBtn = btn;
 }
