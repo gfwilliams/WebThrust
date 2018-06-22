@@ -2,6 +2,8 @@ var C = require("./server/const.js");
 
 
 var world = require("./server/world.js");
+world.load();
+world.initialize();
 var httpServer = require("./server/httpserver.js");
 httpServer.onNewConnection = function(uuid) {
   world.players[uuid] = newPlayer(uuid);
@@ -27,8 +29,8 @@ function newPlayer(uuid) {
       alive : true
     };
     var inAsteroid = false;
-
   } while (inAsteroid);
+  world.initialize();
   return p;
 }
 
@@ -107,6 +109,7 @@ function updateWorld() {
 frames=0;
 setInterval(function() {
   frames++;
+  world.step( 1/30 ); // box2d
   updateWorld();
   httpServer.sendUpdates();
 }, 1000/30);
@@ -118,7 +121,7 @@ setInterval(function() {
   frames=0;
 }, 10000);
 // Add a REPL - so we can interact with the code while this is running
-if (require.main === module){
+/*if (require.main === module){
     (function() {
         var _context = require('repl').start({prompt: 'srv> '}).context;
         var scope = require('lexical-scope')(require('fs').readFileSync(__filename));
@@ -127,10 +130,10 @@ if (require.main === module){
         for (name in scope.globals.exported)
             _context[scope.globals.exported[name]] = eval(scope.globals.exported[name]);
     })();
-}
+}*/
 
 // Deal with socket errors/etc
-process.on('uncaughtException', function (err) {
+/*process.on('uncaughtException', function (err) {
   console.error(err.message, err.stack);
   console.log("Carrying on regardless...");
-});
+});*/

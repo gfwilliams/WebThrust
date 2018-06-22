@@ -60,9 +60,10 @@ httpServer.webSocketServer.on('request', function(request) {
 httpServer.sendUpdates = function() {
   for (var i in httpServer.connections) {
     httpServer.connections[i].sendUTF(JSON.stringify({
-      uuid:i,
+      uuid : i,
       players : world.players,
-      bullets : world.bullets
+      bullets : world.bullets,
+      bodies : world.bodies,
     }));
   }
   world.uuid = undefined;

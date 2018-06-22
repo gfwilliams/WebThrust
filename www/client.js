@@ -71,10 +71,22 @@ window.addEventListener("load", function(event) {
     // Translate so we're in the middle
     ctx.translate(canvas.width/2 - us.x, canvas.height/2 - us.y);
     // Draw static geometry
+    ctx.strokeStyle = "white";
     GEOMETRY.static.forEach(function(path) {
       ctx.beginPath();
       path.forEach(xy=>ctx.lineTo(xy.x, xy.y));
       ctx.stroke();
+    });
+    // Draw bodies
+    ctx.strokeStyle = "red";
+    world.bodies.forEach(function(body) {
+      ctx.save();
+      ctx.translate(body.x, body.y);
+      ctx.rotate(body.r);
+      ctx.beginPath();
+      GEOMETRY.bodies[body.geometry].forEach(xy=>ctx.lineTo(xy.x, xy.y));
+      ctx.stroke();
+      ctx.restore();
     });
 
     // draw players
