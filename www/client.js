@@ -32,8 +32,8 @@ window.addEventListener("load", function(event) {
   ctx = canvas.getContext("2d");
   window.addEventListener('resize', resizeCanvas, false);
   resizeCanvas();
-  
-  
+
+
 
   // if user is running mozilla then use it's built-in WebSocket
   window.WebSocket = window.WebSocket || window.MozWebSocket;
@@ -57,69 +57,70 @@ window.addEventListener("load", function(event) {
         console.log('This doesn\'t look like a valid JSON: ', message.data);
         return;
     }
-    var sx = canvas.width / world.width;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    /*var sx = canvas.width / world.width;
     var sy = canvas.height / world.height;
     var scale = Math.min(sx,sy);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(scale, scale);
-    
+    ctx.scale(scale, scale);*/
+    var us = world.players[world.uuid];
+    // Clear screen
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, world.width, world.height);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "white";
+    // Translate so we're in the middle
+    ctx.translate(canvas.width/2 - us.x, canvas.height/2 - us.y);
+    // Draw static geometry
+    GEOMETRY.static.forEach(function(path) {
+      ctx.beginPath();
+      path.forEach(xy=>ctx.lineTo(xy.x, xy.y));
+      ctx.stroke();
+    });
 
     // draw players
     for (var uuid in world.players) {
-      if (uuid == world.uuid) 
+      if (uuid == world.uuid)
         ctx.fillStyle = "#FF0000";  // us
       else
         ctx.fillStyle = "#00FF00"; // others
       var p = world.players[uuid];
       if (p.alive) {
+        var s = 12;
         ctx.beginPath();
-        ctx.moveTo(Math.cos(p.rot)*12+p.x, Math.sin(p.rot)*12+p.y);
-        ctx.lineTo(Math.cos(p.rot+2.5)*12+p.x, Math.sin(p.rot+2.5)*12+p.y);
-        ctx.lineTo(Math.cos(p.rot+Math.PI)*8+p.x, Math.sin(p.rot+Math.PI)*8+p.y);
-        ctx.lineTo(Math.cos(p.rot-2.5)*12+p.x, Math.sin(p.rot-2.5)*12+p.y);
+        ctx.moveTo(Math.cos(p.rot)*s+p.x, Math.sin(p.rot)*s+p.y);
+        ctx.lineTo(Math.cos(p.rot+2.5)*s+p.x, Math.sin(p.rot+2.5)*s+p.y);
+        ctx.lineTo(Math.cos(p.rot+Math.PI)*s/1.5+p.x, Math.sin(p.rot+Math.PI)*s/1.5+p.y);
+        ctx.lineTo(Math.cos(p.rot-2.5)*s+p.x, Math.sin(p.rot-2.5)*s+p.y);
         ctx.fill();
       } else if (p.explodeIdx !== undefined) {
         drawImageTile(ctx, IMAGES.explode, p.x, p.y, p.explodeIdx, 8);
       }
     };
-    // bullets 
-    ctx.fillStyle = "black";
+    // actual parts of the world
+    /*ctx.fillStyle = "black";
     world.asteroids.forEach(function(p) {
       drawAsteroid(p, 0, 0);
       if (p.x > world.width-p.rad) drawAsteroid(p, -world.width, 0);
       if (p.x < p.rad) drawAsteroid(p, world.width, 0);
       if (p.y > world.height-p.rad) drawAsteroid(p, 0,-world.height);
       if (p.y < p.rad) drawAsteroid(p, 0,world.height);
-    });
-    // bullets 
+    });*/
+    // bullets
     ctx.fillStyle = "red";
     world.bullets.forEach(function(b) {
       ctx.fillRect(b.x-1, b.y-1, 3,3);
     });
 
-    
+
     // handle incoming message
   };
-  
+
   window.addEventListener("keydown", keyListener);
   window.addEventListener("keyup", keyListener);
   window.addEventListener("touchstart", touchListener);
   window.addEventListener("touchend", touchListener);
   window.addEventListener("touchmove", touchListener);
 });
-
-function drawAsteroid(p,dx,dy) {
-  ctx.beginPath();
-  ctx.moveTo(Math.cos(p.rot)*p.rads[0]+p.x+dx, Math.sin(p.rot)*p.rads[0]+p.y+dy);
-  for (var i=1;i<=p.rads.length;i++) {
-    var a = p.rot + i*Math.PI*2/p.rads.length;
-    ctx.lineTo(Math.cos(a)*p.rads[i%p.rads.length]+p.x+dx, Math.sin(a)*p.rads[i%p.rads.length]+p.y+dy);
-  }
-  ctx.stroke();
-}
 
 function sendPlayerUpdate() {
   connection.send(JSON.stringify(player));
@@ -156,7 +157,7 @@ function keyListener(event) {
 }
 
 var oldBtn = 0;
-function touchListener(e) { 
+function touchListener(e) {
   e.preventDefault();
   var touches = e.changedTouches;
   var w = window.innerWidth;
