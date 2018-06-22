@@ -26,14 +26,15 @@ world.load = function() {
   var svgReader = require("../lib/svgReader.js");
   // Add Player geometry
   world.geometry.bodies.push([
-    {x:0,y:12},
-    {x:-8,y:-7},
-    {x:0,y:-5},
-    {x:8,y:-7}
+    {x:0,y:3},
+    {x:-2,y:-1.75},
+    {x:0,y:-1.25},
+    {x:2,y:-1.75}
   ]);
   // Load level
   svgReader.readSVGFile("level1.svg", function(err,svg) {
     if (err) throw new Error(err);
+    console.log(JSON.stringify(svg,null,2));
     svg.forEach(function(el) {
       var handled = false;
       if (el.type=="path") {
@@ -127,8 +128,8 @@ world.initialize = function() {
         body.CreateFixture(shape, 0.0);
       }
 
-      console.log("Properties on Body");
-      console.log(Object.getOwnPropertyNames(Object.getPrototypeOf(body)));
+      /*console.log("Properties on Body");
+      console.log(Object.getOwnPropertyNames(Object.getPrototypeOf(body)));*/
     });
     // movable bodies
     world.bodies.forEach(function(b) {
@@ -147,13 +148,13 @@ world.initialize = function() {
 
 world.addBullet = function(pos, vel, owneruuid) {
   var shape = new Box2D.b2PolygonShape();
-  shape.SetAsBox(2, 2);
+  shape.SetAsBox(0.2, 0.2);
   var bd = new Box2D.b2BodyDef();
   bd.set_type(Box2D.b2_dynamicBody);
   bd.set_position(new Box2D.b2Vec2(pos.x, pos.y));
   bd.set_linearVelocity(new Box2D.b2Vec2(vel.x, vel.y));
   var body = world.box2dworld.CreateBody(bd);
-  body.CreateFixture(shape, 200.0);
+  body.CreateFixture(shape, C.BULLET.MASS);
   world.box2dobjects.push(body);
 
   var bullet = {
@@ -169,7 +170,7 @@ world.addBullet = function(pos, vel, owneruuid) {
 
 world.addPlayer = function(uuid) {
   var n = Math.randomInt(world.spawnPoints.length);
-  var spawnPt = world.spawnPoints[n]
+  var spawnPt = world.spawnPoints[n];
   var player = {
     type : "player",
     geometry : GEOM.PLAYER,
@@ -191,8 +192,8 @@ world.addPlayer = function(uuid) {
   bd.set_angle(player.r);
   var body = world.box2dworld.CreateBody(bd);
   var shape = Box2D.createPolygonShape(world.geometry.bodies[player.geometry]);
-  body.CreateFixture(shape, 2.0);
-  body.SetAngularDamping(5);
+  body.CreateFixture(shape, C.PLAYER.MASS);
+  body.SetAngularDamping(C.PLAYER.ANGULAR_DAMPING);
   world.box2dobjects.push(body);
   body.link = player;
 };
@@ -287,7 +288,7 @@ world.handleContact = function(a,b) {
   if (a.link && a.link.type=="bullet") world.handleBulletContact(a, b);
   if (b.link && b.link.type=="bullet") world.handleBulletContact(b, a);
   if (a.link && a.link.type=="player") world.handlePlayerContact(a, b);
-  if (b.link && b.link.type=="player") world.handlePlayerContact(b, a);  
+  if (b.link && b.link.type=="player") world.handlePlayerContact(b, a);
 };
 
 module.exports = world;

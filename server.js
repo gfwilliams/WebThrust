@@ -10,7 +10,8 @@ httpServer.onNewConnection = function(uuid) {
 };
 
 Math.randomInt = function(m) {
-  return (0|(Math.random()+1)*0x7FFFFFFF) % m;
+  var r = (0|((Math.random()+10)*0xFFFFF));
+  return r % m;
 };
 
 function killPlayer(uuid) {

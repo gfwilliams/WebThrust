@@ -15,15 +15,15 @@ function loadImage(fn) {
 var IMAGES = {
   explode : loadImage("explode.png")
 };
-function drawImageTile(ctx, img, x,y, idx, tsize) {
+function drawImageTile(ctx, img, x,y,sz, idx, tiles) {
   idx=0|idx;
   var s = img.width;
-  var ts = s/tsize;
-  var ix = idx%tsize;
-  var iy = 0|(idx/tsize);
+  var ts = s/tiles;
+  var ix = idx%tiles;
+  var iy = 0|(idx/tiles);
   ctx.drawImage(img,
     ix*ts,iy*ts,ts,ts,
-    x - (ts/2), y - (ts/2),ts,ts);
+    x - (ts/2)*sz, y - (ts/2)*sz,ts*sz,ts*sz);
 }
 
 
@@ -77,9 +77,11 @@ window.addEventListener("load", function(event) {
     ctx.textAlign = "right";
     ctx.fillText("Score: "+us.score, canvas.width-10, 10);
     // Translate so we're in the middle
-    var scale = 2;
+    var scale = 10;
+
     ctx.scale(scale, scale);
-    ctx.translate(canvas.width/4 - us.x, canvas.height/4 - us.y);
+    ctx.translate(canvas.width/(2*scale) - us.x, canvas.height/(2*scale) - us.y);
+    ctx.lineWidth = 2 / scale;
 
     // Draw static geometry
     ctx.strokeStyle = "white";
@@ -108,33 +110,43 @@ window.addEventListener("load", function(event) {
         ctx.save();
         ctx.translate(body.x, body.y);
 
-        if (uuid == world.uuid) {
-          ctx.fillStyle = "#FF0000";  // us
-        } else {
+        if (uuid != world.uuid) {
           // health bar
           ctx.fillStyle = (body.health>60)?"#00FF00":((body.health<30)?"#FF0000":"#FFFF00");
-          ctx.strokeStyle = "#00FF00"; // others
+          ctx.strokeStyle = "#00FF00";
           ctx.beginPath()
           ctx.rect(-11, 19, 22*body.health/100, 2);
           ctx.fill();
           ctx.beginPath();
           ctx.rect(-12, 18, 24, 4);
           ctx.stroke();
-          ctx.fillStyle = "#00FF00"; // others
         }
 
         ctx.rotate(body.r);
+        if (body.up) { // thruster
+          ctx.fillStyle = "#FFFF00";
+          ctx.beginPath();
+          ctx.arc(0, -1.5, 0.7, 0, 2 * Math.PI, false);
+          ctx.fill();
+        }
+
+        if (uuid == world.uuid) {
+          ctx.fillStyle = "#FF0000";  // us
+        } else {
+          ctx.fillStyle = "#00FF00"; // others
+        }
+
         ctx.beginPath();
         GEOMETRY.bodies[body.geometry].forEach(xy=>ctx.lineTo(xy.x, xy.y));
         ctx.fill();
         ctx.restore();
       } else if (p.explodeIdx !== undefined) {
-        drawImageTile(ctx, IMAGES.explode, p.x, p.y, p.explodeIdx, 8);
+        drawImageTile(ctx, IMAGES.explode, p.x, p.y, 1/scale, p.explodeIdx, 8);
       }
     };
     // Draw sprites
     world.sprites.forEach(function(sprite) {
-      drawImageTile(ctx, IMAGES[sprite.type], sprite.x, sprite.y, sprite.frame, 8);
+      drawImageTile(ctx, IMAGES[sprite.type], sprite.x, sprite.y, 1/scale, sprite.frame, 8);
     });
 
     // actual parts of the world
@@ -149,7 +161,9 @@ window.addEventListener("load", function(event) {
     // bullets
     ctx.fillStyle = "red";
     world.bullets.forEach(function(b) {
-      ctx.fillRect(b.x-1, b.y-1, 3,3);
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 0.5, 0, 2 * Math.PI, false);
+      ctx.fill();
     });
 
 
