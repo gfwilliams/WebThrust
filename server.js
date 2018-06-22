@@ -6,39 +6,18 @@ world.load();
 world.initialize();
 var httpServer = require("./server/httpserver.js");
 httpServer.onNewConnection = function(uuid) {
-  world.players[uuid] = newPlayer(uuid);
+  world.addPlayer(uuid);
 };
 
 Math.randomInt = function(m) {
   return (0|(Math.random()+1)*0x7FFFFFFF) % m;
 };
 
-function newPlayer(uuid) {
-  do {
-    var n = Math.randomInt(world.spawnPoints.length);
-    var spawnPt = world.spawnPoints[n]
-    var p = {
-      uuid : uuid,
-      x : spawnPt.x,
-      y : spawnPt.y,
-      rot : 0,
-      velx : 0,
-      vely : 0,
-      health : 10,
-      reloadtime : 0,
-      alive : true
-    };
-    var inAsteroid = false;
-  } while (inAsteroid);
-  world.initialize();
-  return p;
-}
-
 function killPlayer(uuid) {
   world.players[uuid].alive = false;
   world.players[uuid].explodeIdx = 0;
   setTimeout(function() {
-    world.players[uuid] = newPlayer(uuid);
+    world.addPlayer(uuid);
   }, 2000);
 }
 
@@ -48,69 +27,11 @@ function dist(a,b) {
   return Math.sqrt(dx*dx + dy*dy);
 }
 
-function checkBoundaries(p) {
-}
-
-function updateWorld() {
-  for (var uuid in world.players) {
-    var p = world.players[uuid];
-    if (p.explodeIdx!==undefined) p.explodeIdx++;
-    if (p.explodeIdx>63) p.explodeIdx=undefined;
-    var acc = 0;
-    if (p.alive) {
-      if (p.up) acc += 1;
-      if (p.down) acc -= 0.1;
-      if (p.left) p.rot -= C.PLAYER.ROT_SPEED;
-      if (p.right) p.rot += C.PLAYER.ROT_SPEED;
-    }
-    p.velx *= C.PLAYER.FRICTION;
-    p.vely *= C.PLAYER.FRICTION;
-    p.velx += Math.cos(p.rot)*acc;
-    p.vely += Math.sin(p.rot)*acc;
-    p.x += p.velx;
-    p.y += p.vely;
-    checkBoundaries(p);
-    if (p.alive) {
-      if (p.reloadtime>0) p.reloadtime--;
-      if (p.reloadtime==0 && p.shoot) {
-        p.reloadtime = C.PLAYER.RELOADTIME;
-        world.bullets.push({
-          x : p.x + Math.cos(p.rot)*C.PLAYER.GUNPOS,
-          y : p.y + Math.sin(p.rot)*C.PLAYER.GUNPOS,
-          velx : p.velx + Math.cos(p.rot)*C.PLAYER.BULLETSPEED,
-          vely : p.vely + Math.sin(p.rot)*C.PLAYER.BULLETSPEED,
-        });
-      }
-    }
-  }
-
-  for (var i=0;i<world.bullets.length;i++) {
-    var p = world.bullets[i];
-    p.x += p.velx;
-    p.y += p.vely;
-    checkBoundaries(p);
-    var bulletHit = false;
-
-    for (var uuid in world.players) {
-      if (!world.players[uuid].alive) continue;
-      if (dist(world.players[uuid],p) < C.PLAYER.COLLIDE_RAD) {
-        world.players[uuid].health--;
-        if (world.players[uuid].health<=0)
-          killPlayer(uuid);
-      }
-    }
-    if (bulletHit) {
-      world.bullets.splice(i,1);
-      i--;
-    }
-  }
-}
 
 frames=0;
 setInterval(function() {
   frames++;
   world.step( 1/30 ); // box2d
-  updateWorld();
   httpServer.sendUpdates();
 }, 1000/30);
 
