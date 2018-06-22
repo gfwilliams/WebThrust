@@ -27,9 +27,9 @@ world.load = function() {
   // Add Player geometry
   world.geometry.bodies.push([
     {x:0,y:12},
-    {x:-5,y:-10},
-    {x:0,y:-8},
-    {x:5,y:-10}
+    {x:-8,y:-7},
+    {x:0,y:-5},
+    {x:8,y:-7}
   ]);
   // Load level
   svgReader.readSVGFile("level1.svg", function(err,svg) {
@@ -145,7 +145,7 @@ world.initialize = function() {
   });
 };
 
-world.addBullet = function(pos, vel) {
+world.addBullet = function(pos, vel, owneruuid) {
   var shape = new Box2D.b2PolygonShape();
   shape.SetAsBox(2, 2);
   var bd = new Box2D.b2BodyDef();
@@ -160,7 +160,8 @@ world.addBullet = function(pos, vel) {
     type : "bullet",
     x : pos.x,
     y : pos.y,
-    r : 0
+    r : 0,
+    player : owneruuid
   };
   body.link = bullet;
   world.bullets.push(bullet);
@@ -176,7 +177,8 @@ world.addPlayer = function(uuid) {
     x : spawnPt.x,
     y : spawnPt.y,
     r : Math.PI,
-    health : 10,
+    health : 100,
+    score : 0,
     reloadtime : 0,
     alive : true
   };
@@ -221,7 +223,7 @@ world.step = function(seconds) {
           y : p.y + Math.cos(p.r)*C.PLAYER.GUNPOS},{
           x : v.get_x() - Math.sin(p.r)*C.PLAYER.BULLETSPEED,
           y : v.get_y() + Math.cos(p.r)*C.PLAYER.BULLETSPEED,
-        });
+        }, uuid);
       }
     }
   }
@@ -236,12 +238,14 @@ world.step = function(seconds) {
       i--;
     }
   }
-  // Box2D
+  // Box2D - step
   world.box2dworld.Step(seconds, 3, 3);
+  // Box2D - remove dead objects
   world.box2dremoval.forEach(function(body) {
     world.box2dworld.DestroyBody(body);
   });
   world.box2dremoval = [];
+  // update object state
   world.box2dobjects.forEach(function(obj, idx) {
     var p = {x:obj.GetPosition().get_x(), y:obj.GetPosition().get_y()};
     var r = obj.GetAngle();
@@ -250,18 +254,17 @@ world.step = function(seconds) {
       link.x = p.x;
       link.y = p.y;
       link.r = r;
-      //if (link.type=="bullet")console.log(link);
-    } /*else {
-      world.bullets[idx] = {
-        x:p.x,y:p.y,
-        velx:0,vely:0
-      };
-    }*/
+    }
   });
 };
 
 // A Bullet hit something
 world.handleBulletContact = function(bullet, obj) {
+  if (obj.link && obj.link.type=="player") {
+    world.players[bullet.link.player].score++;
+    obj.link.health -= C.PLAYER.HEALTH_SHOT;
+  }
+
   if (world.box2dremoval.indexOf(bullet)==-1) {
     world.box2dremoval.push(bullet);
     world.bullets.splice(world.bullets.indexOf(bullet.link), 1);
@@ -274,12 +277,17 @@ world.handleBulletContact = function(bullet, obj) {
   }
 };
 
+// A Player hit something
+world.handlePlayerContact = function(player, obj) {
+  player.link.health -= C.PLAYER.HEALTH_HIT;
+};
+
 
 world.handleContact = function(a,b) {
-  var aBullet = a.link && a.link.type=="bullet";
-  var bBullet = b.link && b.link.type=="bullet";
-  if (aBullet) world.handleBulletContact(a, b);
-  if (bBullet) world.handleBulletContact(b, a);
+  if (a.link && a.link.type=="bullet") world.handleBulletContact(a, b);
+  if (b.link && b.link.type=="bullet") world.handleBulletContact(b, a);
+  if (a.link && a.link.type=="player") world.handlePlayerContact(a, b);
+  if (b.link && b.link.type=="player") world.handlePlayerContact(b, a);  
 };
 
 module.exports = world;

@@ -68,6 +68,14 @@ window.addEventListener("load", function(event) {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "white";
+    // Draw score/health
+    ctx.fillStyle = "red";
+    ctx.font = '48px serif';
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.fillText(us.health+'%', 10, 10);
+    ctx.textAlign = "right";
+    ctx.fillText("Score: "+us.score, canvas.width-10, 10);
     // Translate so we're in the middle
     var scale = 2;
     ctx.scale(scale, scale);
@@ -94,15 +102,27 @@ window.addEventListener("load", function(event) {
 
     // draw players
     for (var uuid in world.players) {
-      if (uuid == world.uuid)
-        ctx.fillStyle = "#FF0000";  // us
-      else
-        ctx.fillStyle = "#00FF00"; // others
       var body = world.players[uuid];
       if (body.alive) {
         var s = 12;
         ctx.save();
         ctx.translate(body.x, body.y);
+
+        if (uuid == world.uuid) {
+          ctx.fillStyle = "#FF0000";  // us
+        } else {
+          // health bar
+          ctx.fillStyle = (body.health>60)?"#00FF00":((body.health<30)?"#FF0000":"#FFFF00");
+          ctx.strokeStyle = "#00FF00"; // others
+          ctx.beginPath()
+          ctx.rect(-11, 19, 22*body.health/100, 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.rect(-12, 18, 24, 4);
+          ctx.stroke();
+          ctx.fillStyle = "#00FF00"; // others
+        }
+
         ctx.rotate(body.r);
         ctx.beginPath();
         GEOMETRY.bodies[body.geometry].forEach(xy=>ctx.lineTo(xy.x, xy.y));
